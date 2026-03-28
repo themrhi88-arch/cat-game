@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Midnight Mischief - Cat Chaos Simulator</title>
+    <style>
+        :root {
+            --bg-pink: #ffafcc;
+            --bg-blue: #a2d2ff;
+            --accent-pink: #fb6f92;
+            --dark-blue: #023e8a;
+            --cat-color: #ffffff;
+            --door-brown: #5d4037;
+            --night-sky: #050510;
+            --gold: #ffd700;
+            --zoomie-blue: #00f2ff;
+            --danger-red: #ff4d4d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #05050a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: #000;
+            border: 4px solid var(--dark-blue);
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        #ui-bar {
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(15, 15, 30, 0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 12px 12px 0 0;
+            box-sizing: border-box;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+            color: var(--bg-blue);
+        }
+
+        .meter-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .meter-container {
+            width: 120px;
+            height: 10px;
+            background: #111;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        #zoomie-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--zoomie-blue);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--zoomie-blue);
+        }
+
+        #noise-meter-wrap {
+            display: none; /* Only shown in master bedroom */
+        }
+
+        #noise-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--danger-red);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--danger-red);
+        }
+
+        .label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #889;
+        }
+
+        #overlay, #controls-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #hint-popup {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffff88;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.5);
+            display: none;
+            z-index: 5;
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .btn {
+            background: var(--accent-pink);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            background: #ff4d7d;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            font-size: 0.75rem;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--accent-pink);
+            max-width: 400px;
+            position: relative;
+        }
+
+        .close-icon-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .close-icon-btn:hover {
+            background: var(--danger-red);
+        }
+
+        .meow-text {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .kbd {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            color: var(--bg-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-bar">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn control-btn" id="open-controls">CONTROLS</button>
+            <div id="clock-display">12:00 AM</div>
+        </div>
+        
+        <div style="display: flex; gap: 20px;">
+            <div class="meter-group">
+                <span class="label">Zoomies</span>
+                <div class="meter-container"><div id="zoomie-fill"></div></div>
+            </div>
+            <div class="meter-group" id="noise-meter-wrap">
+                <span class="label" style="color: var(--danger-red)">Noise Level</span>
+                <div class="meter-container"><div id="noise-fill"></div></div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <div id="room-name">Living Room</div>
+            <div id="score-display" style="font-size: 0.8rem; color: var(--gold)">Chaos: 0</div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div id="hint-popup">"Secret Order: L ➔ R ➔ C"</div>
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Controls Modal -->
+        <div id="controls-modal">
+            <div class="modal-content">
+                <button class="close-icon-btn" id="close-x">✕</button>
+                <h2 style="color: var(--accent-pink); margin-top: 0;">How to Play</h2>
+                <div style="text-align: left; line-height: 1.8; font-size: 0.9rem;">
+                    <p><span class="kbd">ARROWS</span> Move & Jump</p>
+                    <p><span class="kbd">SPACE</span> Smash Items</p>
+                    <p><span class="kbd">E</span> Enter Doors / Use Objects</p>
+                    <p><span class="kbd">M</span> Meow (Ripples break items!)</p>
+                    <p><span class="kbd">Z</span> Activate Zoomies (at 100%)</p>
+                    <p><span class="kbd">C</span> Catch Golden Mouse</p>
+                    <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+                    <p style="color: var(--danger-red); font-weight: bold; text-align: center;">⚠ STEALTH WARNING ⚠</p>
+                    <p style="font-size: 0.8rem; text-align: center;">In the <b>Master Bedroom</b>, breaking 2 items wakes the human!</p>
+                </div>
+                <button class="btn" id="close-controls" style="margin-top: 20px; width: 100%;">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Start/End Overlay -->
+        <div id="overlay">
+            <h1 id="overlay-title" style="margin-bottom: 5px;">Midnight Mischief</h1>
+            <p id="overlay-msg" style="color: #889;">The humans are asleep. It's time to play.</p>
+            <p id="final-score" style="font-size: 1.8rem; color: var(--gold); margin: 20px 0;"></p>
+            <button class="btn" id="start-btn" style="padding: 15px 40px; font-size: 1.2rem;">Start the Night</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const clockDisplay = document.getElementById('clock-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const roomDisplay = document.getElementById('room-name');
+        const zoomieFill = document.getElementById('zoomie-fill');
+        const noiseFill = document.getElementById('noise-fill');
+        const noiseMeterWrap = document.getElementById('noise-meter-wrap');
+        const overlay = document.getElementById('overlay');
+        const controlsModal = document.getElementById('controls-modal');
+        const startBtn = document.getElementById('start-btn');
+        const openControlsBtn = document.getElementById('open-controls');
+        const closeControlsBtn = document.getElementById('close-controls');
+        const closeXBtn = document.getElementById('close-x');
+        const hintPopup = document.getElementById('hint-popup');
+
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 400;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        let score = 0;
+        let gameRunning = false;
+        let gameTime = { hour: 12, minute: 0 };
+        let lastTimeUpdate = 0;
+        let currentRoom = 'livingRoom';
+        
+        let hasGoldenClaws = false;
+        let rainbowMouseCaught = false;
+        let trophyOrder = []; 
+        let bossHealth = 100;
+        let isBossBattle = false;
+
+        let zoomieLevel = 0;
+        let isZooming = false;
+        let zoomieTimer = 0;
+        let meows = [];
+        let roomNoise = 0; 
+
+        const GRAVITY = 0.5;
+        const FRICTION = 0.8;
+        const RESPAWN_TIME = 20000;
+
+        const cat = {
+            x: 150, y: 300, width: 40, height: 25, dx: 0, dy: 0, speed: 5.5, jumpForce: -11.5, grounded: false, facingRight: true,
+            draw() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                if (!this.facingRight) ctx.scale(-1, 1);
+                
+                if (isZooming) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#00f2ff';
+                } else if (hasGoldenClaws) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'gold';
+                }
+                
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath(); ctx.ellipse(0, 15, 20, 5, 0, 0, Math.PI * 2); ctx.fill();
+                
+                ctx.fillStyle = isZooming ? '#b3faff' : (hasGoldenClaws ? '#FFF700' : '#FFFFFF');
+                ctx.beginPath(); ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(15, -5, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(8, -12); ctx.lineTo(15, -25); ctx.lineTo(22, -12); ctx.fill();
+                
+                const wiggleBase = isZooming ? 50 : 150;
+                const wiggle = Math.sin(Date.now() / wiggleBase) * 8;
+                ctx.lineWidth = 4; ctx.strokeStyle = ctx.fillStyle; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(-18, 0); ctx.quadraticCurveTo(-35 + wiggle, -20, -25, -35 + wiggle/2); ctx.stroke();
+                
+                ctx.fillStyle = isZooming ? '#0033ff' : '#111'; 
+                ctx.beginPath(); ctx.arc(18, -8, 2.5, 0, Math.PI * 2); ctx.fill();
+                
+                if (hasGoldenClaws) {
+                    ctx.strokeStyle = 'gold'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(15, 5); ctx.lineTo(25, 10); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(15, 8); ctx.lineTo(23, 15); ctx.stroke();
+                }
+                ctx.restore();
+            }
+        };
+
+        const mouse = {
+            x: 400, y: 340, width: 14, height: 9, dx: 8, room: 'attic', facingRight: true, isCaught: false, type: 'gold', hue: 0, teleportCooldown: 0,
+            draw() {
+                if (this.isCaught || this.room !== currentRoom || isBossBattle) return;
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                if (!this.facingRight) ctx.scale(-1, 1);
+                if (this.type === 'gold') {
+                    ctx.fillStyle = '#ffd700'; ctx.shadowBlur = 10; ctx.shadowColor = 'gold';
+                } else {
+                    this.hue = (this.hue + 20) % 360;
+                    ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                    ctx.shadowBlur = 25; ctx.shadowColor = ctx.fillStyle;
+                }
+                ctx.beginPath(); ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5, -2, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(-7, 0); ctx.quadraticCurveTo(-15, -5, -12, -10); ctx.stroke();
+                ctx.restore();
+            },
+            update() {
+                if (this.isCaught || isBossBattle) return;
+                let currentSpeed = (this.type === 'rainbow') ? 16 : 9;
+                if (this.type === 'rainbow' && Math.random() < 0.1) currentSpeed = 26;
+                this.x += (this.dx > 0 ? currentSpeed : -currentSpeed);
+                if (this.type === 'rainbow') {
+                    this.teleportCooldown--;
+                    const distToCat = Math.sqrt(Math.pow(cat.x - this.x, 2) + Math.pow(cat.y - this.y, 2));
+                    if ((this.room === currentRoom && distToCat < 130 && this.teleportCooldown <= 0) || Math.random() < 0.005) {
+                        const roomsList = Object.keys(rooms);
+                        this.room = roomsList[Math.floor(Math.random() * roomsList.length)];
+                        this.x = Math.random() * (CANVAS_WIDTH - 100) + 50;
+                        this.teleportCooldown = 120;
+                        this.dx *= -1;
+                    }
+                }
+                if (this.x > CANVAS_WIDTH + 150 || this.x < -150) {
+                    const order = ['attic', 'office', 'bathroom', 'masterBedroom', 'kidsRoom', 'hallway', 'livingRoom', 'kitchen', 'laundryRoom'];
+                    let idx = order.indexOf(this.room);
+                    if (this.x > CANVAS_WIDTH + 150) { this.room = order[(idx + 1) % order.length]; this.x = -80; }
+                    else { this.room = order[(idx - 1 + order.length) % order.length]; this.x = CANVAS_WIDTH + 80; }
+                }
+                if (Math.random() < (this.type === 'rainbow' ? 0.12 : 0.02)) this.dx *= -1;
+                this.facingRight = this.dx > 0;
+            }
+        };
+
+        const boss = {
+            x: 500, y: 150, width: 200, height: 120, dx: -3, dy: 2, 
+            draw() {
+                if (!isBossBattle) return;
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                ctx.fillStyle = '#333'; ctx.shadowBlur = 30; ctx.shadowColor = 'red';
+                ctx.beginPath(); ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'red';
+                ctx.beginPath(); ctx.arc(60, -20, 15, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(20, -25, 12, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.moveTo(70, 10); ctx.lineTo(80, 40); ctx.lineTo(90, 10); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(40, 15); ctx.lineTo(50, 35); ctx.lineTo(60, 15); ctx.fill();
+                ctx.restore();
+                ctx.fillStyle = 'grey'; ctx.fillRect(200, 20, 400, 20);
+                ctx.fillStyle = 'red'; ctx.fillRect(200, 20, 400 * (bossHealth / 100), 20);
+            },
+            update() {
+                if (!isBossBattle) return;
+                this.x += this.dx;
+                this.y += Math.sin(Date.now() / 500) * 4;
+                if (this.x < 0 || this.x > CANVAS_WIDTH - this.width) this.dx *= -1;
+                const dist = Math.sqrt(Math.pow((cat.x + cat.width/2) - (this.x + this.width/2), 2) + Math.pow((cat.y + cat.height/2) - (this.y + this.height/2), 2));
+                if (dist < 100) gameOver("THE GIANT MOUSE CRUSHED YOU!");
+            }
+        };
+
+        class Item {
+            constructor(x, y, width, height, type, points, id = null) {
+                this.x = x; this.y = y; this.width = width; this.height = height; this.type = type; this.points = points; this.isBroken = false; this.id = id;
+            }
+            draw() {
+                if (this.isBroken) {
+                    ctx.fillStyle = '#444';
+                    for(let i=0; i<6; i++) ctx.fillRect(this.x + (i*6) - 5, this.y + this.height - 5, 4, 3);
+                    return;
+                }
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                ctx.fillStyle = this.getColor();
+                switch(this.type) {
+                    case 'Vase':
+                        ctx.beginPath(); ctx.moveTo(-this.width/4, -this.height/2);
+                        ctx.bezierCurveTo(-this.width, -this.height/4, -this.width, this.height/2, -this.width/4, this.height/2);
+                        ctx.lineTo(this.width/4, this.height/2);
+                        ctx.bezierCurveTo(this.width, this.height/2, this.width, -this.height/4, this.width/4, -this.height/2);
+                        ctx.closePath(); ctx.fill();
+                        break;
+                    case 'Lamp':
+                        ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height/3);
+                        ctx.fillStyle = '#5d4037'; ctx.fillRect(-2, -this.height/6, 4, this.height/2);
+                        break;
+                    case 'Trophy':
+                        ctx.fillStyle = '#FFD700'; ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height/2);
+                        ctx.fillRect(-2, 0, 4, this.height/2); ctx.fillRect(-this.width/2, this.height/2 - 4, this.width, 4);
+                        break;
+                    case 'Plate':
+                        ctx.beginPath(); ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI*2); ctx.fill();
+                        break;
+                    case 'Clock':
+                        ctx.beginPath(); ctx.arc(0, 0, this.width/2, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 0, this.width/2.5, 0, Math.PI*2); ctx.fill();
+                        break;
+                    case 'Plant':
+                        ctx.fillStyle = '#8d6e63'; ctx.fillRect(-this.width/2, 0, this.width, this.height/2);
+                        ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.ellipse(0, -this.height/4, this.width/2, this.height/4, 0, 0, Math.PI*2); ctx.fill();
+                        break;
+                    default: ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                }
+                ctx.restore();
+            }
+            getColor() {
+                const colors = { 'Vase': '#00d2ff', 'Lamp': '#ffd166', 'Clock': '#8d6e63', 'Plate': '#f1f2f6', 'Trophy': '#FFD700', 'Bowl': '#ff7675', 'Plant': '#2ecc71' };
+                return colors[this.type] || '#fff';
+            }
+            break() {
+                if(!this.isBroken) {
+                    this.isBroken = true; 
+                    score += this.points; 
+                    scoreDisplay.innerText = `Chaos: ${score.toLocaleString()}`;
+                    zoomieLevel = Math.min(100, zoomieLevel + 10);
+                    zoomieFill.style.width = zoomieLevel + '%';
+                    
+                    if (currentRoom === 'masterBedroom') {
+                        roomNoise += 50; 
+                        noiseFill.style.width = roomNoise + '%';
+                        if (roomNoise >= 100) {
+                            gameOver("YOU WOKE THE HUMAN! STEALTH FAILED.");
+                        }
+                    }
+
+                    if (this.id) {
+                        trophyOrder.push(this.id);
+                        checkTrophyPuzzle();
+                    }
+                    setTimeout(() => { this.isBroken = false; }, RESPAWN_TIME);
+                }
+            }
+        }
+
+        const rooms = {
+            livingRoom: { name: "Living Room", wall: '#1a1a2e', floor: '#16213e', items: [], hasWindow: true, furniture: [{ x: 250, y: 300, w: 250, h: 50, type: 'couch', color: '#0f3460' }], doors: [{ x: 70, target: 'OUTSIDE', isGlass: true }, { x: 740, target: 'hallway' }], leftRoom: 'kitchen', rightRoom: 'hallway' },
+            kitchen: { name: "Kitchen", wall: '#1b262c', floor: '#0f4c75', items: [], hasWindow: true, furniture: [{ x: 450, y: 280, w: 250, h: 70, type: 'counter', color: '#bbe1fa' }], doors: [{ x: 740, target: 'livingRoom' }], leftRoom: 'laundryRoom', rightRoom: 'livingRoom' },
+            laundryRoom: { name: "Laundry", wall: '#2d3436', floor: '#636e72', items: [], hasWindow: false, furniture: [{ x: 150, y: 280, w: 120, h: 70, type: 'washer', color: '#dfe6e9' }], doors: [{ x: 400, target: 'kitchen' }], leftRoom: 'hallway', rightRoom: 'kitchen' },
+            hallway: { name: "Hallway", wall: '#2c3e50', floor: '#34495e', items: [], hasWindow: true, furniture: [], doors: [{ x: 650, target: 'masterBedroom', isStairs: true }, { x: 100, target: 'livingRoom' }], leftRoom: 'livingRoom', rightRoom: 'laundryRoom' },
+            masterBedroom: { name: "Master Bedroom", wall: '#2b1055', floor: '#191970', items: [], hasWindow: true, furniture: [{ x: 300, y: 280, w: 300, h: 70, type: 'bed', color: '#4b0082' }], doors: [{ x: 650, target: 'hallway', isStairs: true, isUpperLevel: true }], leftRoom: 'kidsRoom', rightRoom: 'bathroom' },
+            kidsRoom: { name: "Kids Room", wall: '#4834d4', floor: '#686de0', items: [], hasWindow: false, furniture: [{ x: 150, y: 280, w: 200, h: 70, type: 'bed', color: '#eb4d4b' }], doors: [{ x: 700, target: 'masterBedroom' }], leftRoom: 'attic', rightRoom: 'masterBedroom' },
+            bathroom: { name: "Bathroom", wall: '#130f40', floor: '#30336b', items: [], hasWindow: true, furniture: [{ x: 450, y: 280, w: 200, h: 70, type: 'bath', color: '#95afc0' }], doors: [{ x: 100, target: 'masterBedroom' }], leftRoom: 'masterBedroom', rightRoom: 'office' },
+            office: { name: "Office", wall: '#303952', floor: '#596275', items: [], hasWindow: false, furniture: [{ x: 200, y: 290, w: 150, h: 60, type: 'desk', color: '#303952' }], doors: [{ x: 700, target: 'bathroom' }], leftRoom: 'bathroom', rightRoom: 'attic' },
+            attic: { name: "Attic", wall: '#1e272e', floor: '#485460', items: [], hasWindow: false, furniture: [{ x: 100, y: 310, w: 600, h: 40, type: 'shelf', color: '#05c46b' }], doors: [], leftRoom: 'office', rightRoom: 'kidsRoom' },
+            bossRoom: { name: "VOID", wall: '#000', floor: '#200', items: [], hasWindow: false, furniture: [], doors: [], leftRoom: 'bossRoom', rightRoom: 'bossRoom' }
+        };
+
+        function initItems() {
+            Object.values(rooms).forEach(r => r.items = []);
+            rooms.livingRoom.items.push(new Item(300, 250, 30, 50, 'Vase', 200), new Item(360, 260, 40, 60, 'Lamp', 250), new Item(400, 270, 25, 25, 'Bowl', 100));
+            rooms.kitchen.items.push(new Item(470, 265, 20, 15, 'Bowl', 80), new Item(510, 270, 25, 10, 'Plate', 50), new Item(590, 270, 25, 10, 'Plate', 50));
+            rooms.masterBedroom.items.push(new Item(120, 255, 30, 45, 'Vase', 250), new Item(350, 240, 40, 40, 'Clock', 500));
+            rooms.office.items.push(new Item(500, 100, 45, 45, 'Clock', 600));
+            rooms.attic.items.push(new Item(150, 270, 30, 40, 'Trophy', 1500, 'left'), new Item(620, 270, 30, 40, 'Trophy', 1500, 'right'), new Item(385, 270, 30, 40, 'Trophy', 1500, 'center'));
+        }
+
+        function checkTrophyPuzzle() {
+            if (trophyOrder.length === 3) {
+                if (trophyOrder[0] === 'left' && trophyOrder[1] === 'right' && trophyOrder[2] === 'center') {
+                    hasGoldenClaws = true;
+                    spawnMeowText("GOLDEN CLAWS ACTIVATED!");
+                }
+                trophyOrder = [];
+            }
+        }
+
+        const keys = {};
+        window.addEventListener('keydown', e => { 
+            if (!gameRunning && e.code === 'Enter') startGame();
+            keys[e.code] = true; 
+            if (e.code === 'KeyE') checkDoorInteraction(); 
+            if (e.code === 'Space') checkInteraction(); 
+            if (e.code === 'KeyC') checkMouseCatch(); 
+            if (e.code === 'KeyP') checkPortalEnter();
+            if (e.code === 'KeyZ') activateZoomies();
+            if (e.code === 'KeyM') meow();
+        });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        openControlsBtn.onclick = () => { controlsModal.style.display = 'flex'; };
+        const closeControls = () => { controlsModal.style.display = 'none'; };
+        closeControlsBtn.onclick = closeControls;
+        closeXBtn.onclick = closeControls;
+
+        function activateZoomies() {
+            if (zoomieLevel >= 100 && !isZooming) {
+                isZooming = true; zoomieTimer = 300; cat.speed = 11; cat.jumpForce = -15; spawnMeowText("ZOOMIES!!!");
+            }
+        }
+
+        function meow() {
+            meows.push({ x: cat.x + 20, y: cat.y, size: 5, alpha: 1 });
+            spawnMeowText("MEOW!");
+            rooms[currentRoom].items.forEach(item => {
+                const dist = Math.sqrt(Math.pow(cat.x - item.x, 2) + Math.pow(cat.y - item.y, 2));
+                if (dist < 120) item.break();
+            });
+        }
+
+        function spawnMeowText(txt) {
+            const el = document.createElement('div');
+            el.className = 'meow-text'; el.innerText = txt;
+            el.style.left = (cat.x + 50) + 'px'; el.style.top = (cat.y + 100) + 'px';
+            document.getElementById('game-container').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function checkDoorInteraction() {
+            if (isBossBattle) return;
+            rooms[currentRoom].doors.forEach(door => {
+                if (Math.abs(cat.x - (door.x - cat.width/2)) < 60) { 
+                    if (door.target === 'OUTSIDE') {
+                        gameOver("YOU GOT LOST OUTSIDE! TOO DANGEROUS.");
+                    } else {
+                        currentRoom = door.target; 
+                        roomDisplay.innerText = rooms[currentRoom].name; 
+                        cat.y = 300; cat.dy = 0; 
+                        
+                        if (currentRoom === 'masterBedroom') {
+                            noiseMeterWrap.style.display = 'flex';
+                        } else {
+                            noiseMeterWrap.style.display = 'none';
+                            roomNoise = 0; 
+                            noiseFill.style.width = '0%';
+                        }
+                    }
+                }
+            });
+        }
+
+        function checkInteraction() {
+            rooms[currentRoom].items.forEach(item => {
+                if (!item.isBroken && Math.sqrt(Math.pow((cat.x+cat.width/2) - (item.x+item.width/2), 2) + Math.pow((cat.y+cat.height/2) - (item.y+item.height/2), 2)) < 85) item.break();
+            });
+            if (isBossBattle) {
+                const dist = Math.sqrt(Math.pow((cat.x + cat.width/2) - (boss.x + boss.width/2), 2) + Math.pow((cat.y + cat.height/2) - (this.y + this.height/2), 2));
+                if (dist < 150 && hasGoldenClaws) {
+                    bossHealth -= 25; spawnMeowText("HISS!");
+                    if (bossHealth <= 0) setTimeout(() => gameOver("YOU DEFEATED THE GIANT MOUSE!"), 500);
+                }
+            }
+        }
+
+        function checkMouseCatch() {
+            if (mouse.isCaught || mouse.room !== currentRoom || isBossBattle) return;
+            const dist = Math.sqrt(Math.pow(cat.x - mouse.x, 2) + Math.pow(cat.y - mouse.y, 2));
+            if (dist < 55) {
+                if (mouse.type === 'gold') {
+                    score += 10000; mouse.type = 'rainbow'; mouse.isCaught = false; mouse.room = 'attic'; spawnMeowText("GOLD MOUSE CAUGHT!");
+                } else {
+                    score += 50000; mouse.isCaught = true; rainbowMouseCaught = true; spawnMeowText("RAINBOW MOUSE CAUGHT!");
+                }
+                scoreDisplay.innerText = `Chaos: ${score.toLocaleString()}`;
+            }
+        }
+
+        function checkPortalEnter() {
+            if (currentRoom === 'attic' && rainbowMouseCaught) {
+                const dist = Math.sqrt(Math.pow(cat.x - 400, 2) + Math.pow(cat.y - 150, 2));
+                if (dist < 80) {
+                    isBossBattle = true; currentRoom = 'bossRoom'; cat.x = 100; cat.y = 300; roomDisplay.innerText = "BOSS BATTLE";
+                }
+            }
+        }
+
+        function updatePlayer() {
+            let speed = cat.speed;
+            if (keys['ArrowLeft']) { cat.dx = -speed; cat.facingRight = false; }
+            else if (keys['ArrowRight']) { cat.dx = speed; cat.facingRight = true; }
+            else { cat.dx *= FRICTION; }
+            if (keys['ArrowUp'] && cat.grounded) { cat.dy = cat.jumpForce; cat.grounded = false; }
+            cat.dy += GRAVITY; cat.x += cat.dx; cat.y += cat.dy;
+            if (isZooming) {
+                zoomieTimer--; zoomieLevel = (zoomieTimer / 300) * 100; zoomieFill.style.width = zoomieLevel + '%';
+                if (zoomieTimer <= 0) { isZooming = false; cat.speed = 5.5; cat.jumpForce = -11.5; }
+            }
+            if (!isBossBattle) {
+                if (cat.x < -cat.width/2) { currentRoom = rooms[currentRoom].leftRoom; cat.x = CANVAS_WIDTH - cat.width/2; roomDisplay.innerText = rooms[currentRoom].name; }
+                else if (cat.x > CANVAS_WIDTH - cat.width/2) { currentRoom = rooms[currentRoom].rightRoom; cat.x = -cat.width/2; roomDisplay.innerText = rooms[currentRoom].name; }
+            } else {
+                if (cat.x < 0) cat.x = 0; if (cat.x > CANVAS_WIDTH - cat.width) cat.x = CANVAS_WIDTH - cat.width;
+            }
+            let currentFloor = 350;
+            rooms[currentRoom].furniture.forEach(f => {
+                if (cat.x + cat.width > f.x && cat.x < f.x + f.w && cat.y + cat.height <= f.y + 15 && cat.dy >= 0) currentFloor = f.y;
+            });
+            if (cat.y + cat.height > currentFloor) { cat.y = currentFloor - cat.height; cat.dy = 0; cat.grounded = true; }
+            else cat.grounded = false;
+            if (currentRoom === 'kitchen' && cat.x > 200 && cat.x < 400) hintPopup.style.display = 'block';
+            else hintPopup.style.display = 'none';
+        }
+
+        function updateTime(timestamp) {
+            if (isBossBattle) return;
+            if (!lastTimeUpdate) lastTimeUpdate = timestamp;
+            if (timestamp - lastTimeUpdate >= 1000) {
+                gameTime.minute++; lastTimeUpdate = timestamp;
+                if (gameTime.minute >= 60) { gameTime.minute = 0; gameTime.hour++; if (gameTime.hour > 12) gameTime.hour = 1; }
+                if (gameTime.hour === 6 && gameTime.minute === 0) gameOver("DAWN BREAKS! TIME TO SLEEP.");
+                clockDisplay.innerText = `${gameTime.hour}:${gameTime.minute.toString().padStart(2, '0')} AM`;
+            }
+        }
+
+        function drawBackground() {
+            const room = rooms[currentRoom];
+            ctx.fillStyle = room.wall; ctx.fillRect(0, 0, CANVAS_WIDTH, 350);
+            ctx.fillStyle = room.floor; ctx.fillRect(0, 350, CANVAS_WIDTH, 50);
+            if (room.hasWindow) {
+                ctx.fillStyle = '#020210'; ctx.fillRect(350, 50, 100, 120);
+                ctx.fillStyle = "white"; 
+                for(let i=0; i<12; i++) {
+                    const alpha = (Math.sin(Date.now() / 300 + i) + 1) / 2;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillRect(355 + (i*7), 55 + ((i*19)%100), 2, 2);
+                }
+                ctx.fillStyle = '#fffde7'; ctx.beginPath(); ctx.arc(420, 80, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#223'; ctx.lineWidth = 6; ctx.strokeRect(350, 50, 100, 120);
+                ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(400, 50); ctx.lineTo(400, 170); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(350, 110); ctx.lineTo(450, 110); ctx.stroke();
+            }
+            if (currentRoom === 'masterBedroom') {
+                ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '16px Arial';
+                const zWiggle = Math.sin(Date.now() / 400) * 10;
+                ctx.fillText('Z', 450 + zWiggle, 240 - (Date.now() % 2000 / 20));
+                ctx.fillText('z', 470 + zWiggle, 260 - (Date.now() % 1500 / 15));
+            }
+            if (currentRoom === 'attic' && rainbowMouseCaught) {
+                const pulse = Math.sin(Date.now() / 200) * 10;
+                ctx.fillStyle = '#9b59b6'; ctx.shadowBlur = 20; ctx.shadowColor = '#8e44ad';
+                ctx.beginPath(); ctx.ellipse(400, 150, 50 + pulse, 80 + pulse, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#2c3e50'; ctx.beginPath(); ctx.ellipse(400, 150, 30 + pulse/2, 60 + pulse/2, 0, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            room.furniture.forEach(f => { 
+                ctx.fillStyle = f.color; ctx.fillRect(f.x, f.y, f.w, f.h); 
+                ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(f.x, f.y, f.w, 10);
+            });
+            room.doors.forEach(door => {
+                if (door.isGlass) {
+                    ctx.fillStyle = 'rgba(100, 150, 255, 0.4)'; ctx.fillRect(door.x - 40, 100, 80, 250);
+                    ctx.strokeStyle = '#333'; ctx.lineWidth = 8; ctx.strokeRect(door.x - 40, 100, 80, 250);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(door.x - 20, 120); ctx.lineTo(door.x + 20, 300); ctx.stroke();
+                    ctx.fillStyle = 'silver'; ctx.fillRect(door.x + 25, 230, 5, 40);
+                } else if (door.isStairs && !door.isUpperLevel) {
+                    ctx.fillStyle = 'var(--door-brown)';
+                    for(let i=0; i<10; i++) ctx.fillRect(door.x - 60 + i*12, 350 - (i+1)*22, 70, 22);
+                } else {
+                    ctx.fillStyle = 'var(--door-brown)'; ctx.fillRect(door.x - 35, 140, 70, 210);
+                    ctx.fillStyle = '#221100'; ctx.fillRect(door.x - 30, 145, 60, 200);
+                    ctx.fillStyle = 'gold'; ctx.beginPath(); ctx.arc(door.x + 20, 250, 4, 0, Math.PI*2); ctx.fill();
+                }
+            });
+            meows.forEach((m, i) => {
+                ctx.strokeStyle = `rgba(255,255,255,${m.alpha})`; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(m.x, m.y, m.size, 0, Math.PI*2); ctx.stroke();
+                m.size += 3; m.alpha -= 0.02; if (m.alpha <= 0) meows.splice(i, 1);
+            });
+        }
+
+        function gameOver(msg) {
+            gameRunning = false; overlay.style.display = 'flex';
+            document.getElementById('overlay-title').innerText = msg;
+            document.getElementById('overlay-msg').innerText = "Night Over.";
+            document.getElementById('final-score').innerText = `Chaos Score: ${score.toLocaleString()}`;
+            startBtn.innerText = "Try Again";
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            updateTime(timestamp); updatePlayer(); mouse.update(); boss.update(); drawBackground();
+            rooms[currentRoom].items.forEach(item => item.draw());
+            mouse.draw(); boss.draw(); cat.draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0; scoreDisplay.innerText = `Chaos: 0`;
+            gameTime = { hour: 12, minute: 0 };
+            currentRoom = 'livingRoom'; roomDisplay.innerText = "Living Room";
+            mouse.isCaught = false; mouse.type = 'gold'; mouse.room = 'attic';
+            rainbowMouseCaught = false; hasGoldenClaws = false; trophyOrder = [];
+            isBossBattle = false; bossHealth = 100;
+            zoomieLevel = 0; isZooming = false; zoomieFill.style.width = '0%';
+            roomNoise = 0; noiseFill.style.width = '0%'; noiseMeterWrap.style.display = 'none';
+            initItems(); overlay.style.display = 'none'; gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        startBtn.onclick = startGame;
+        initItems();
+        overlay.style.display = 'flex';
+    </script>
+</body>
+</html>
